@@ -1,0 +1,49 @@
+
+
+install.packages('readxl')
+library(readxl)
+blog<-read.csv("mobile2014_00.csv")
+str(blog)
+
+install.packages('tm')
+library(tm)
+
+install.packages('stringr')
+library(stringr)
+
+ko.words = function(doc){
+  d=str_split(doc, ';')[[1]]
+  extracted = tolower(str_match(d, '([가-힣azA-Z]+)/[NVO]'))
+  keyword = extracted[,2]
+  
+}
+
+options(mc.cores=1)
+cps = Corpus(VectorSource(blog$Texts))
+tdm<-TermDocumentMatrix(cps, control=list(tokenize=ko.words,
+                                          removePunctuation=T,
+                                          removeNumbers=T,
+                                          wordLength=c(2, Inf)))
+
+tdm.matrix=as.matrix(tdm)
+
+
+word.count=rowSums(tdm.matrix)
+word.order=order(word.count, decreasing=T)
+freq.word=tdm.matrix[word.order[1:25],]
+rownames(tdm.matrix)[word.order[1:25]]
+
+co.matrix=freq.word %*% t(freq.word)
+
+install.packages('qgraph')
+library(qgraph)
+
+qg<-qgraph(co.matrix,
+           labels=rownames(co.matrix),
+           diag=F,
+           layout='spring',
+           threshold=1,
+           edge.color='green',
+           vsize=log(diag(co.matrix))*2.5, text_size=20)
+
+plot(qg)
